@@ -13,14 +13,12 @@ int main() {
     // std::cout << "Gaussian blur done. Output saved as blurred.ppm\n";
 
     // 2. Matrix multiplication
-    size_t N = 3; // Size of the matrices
-    std::vector<std::vector<int>> matrixA(N, std::vector<int>(N));
-    std::vector<std::vector<int>> matrixB(N, std::vector<int>(N));
-    std::vector<std::vector<int>> matrixC(N, std::vector<int>(N));
+    size_t N = 5; // Size of the matrices
+
 
 
     cpu_tasks cpuObj;
-    cpuObj.matrixMultiplyCPU(matrixA, matrixB, matrixC, N);
+    cpuObj.matrixMultiplyCPU(N);
 
     return 0;
 }
