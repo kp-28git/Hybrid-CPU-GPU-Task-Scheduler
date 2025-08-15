@@ -16,17 +16,18 @@ public:
     static void gaussianBlurCPU(const std::string &imagePath, const std::string &outputPath);
 
     // Matrix operations
-    void matrixMultiplyCPU(std::vector<std::vector<int>> &A,
-                                      std::vector<std::vector<int>> &B,
-                                      std::vector<std::vector<int>> &C,
-                                      size_t N);
+    void matrixMultiplyCPU(size_t N);
 
 private:
+    std::vector<std::vector<int>> matrixA;
+    std::vector<std::vector<int>> matrixB;
+    std::vector<std::vector<int>> matrixC;
+
     static Image readPPM(const std::string &filename);
     static void writePPM(const std::string &filename, const Image &img);
 
     static void printMatrix(std::vector<std::vector<int>> &matrix);
-    static void generateRandomMatrix(std::vector<std::vector<int>> &matrix);
+    static std::vector<std::vector<int>> generateRandomMatrix(size_t N);
 };
 
 #endif // CPU_TASKS_H

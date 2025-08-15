@@ -65,38 +65,38 @@ void cpu_tasks::printMatrix(std::vector<std::vector<int>> &matrix) {
     }
 }
 
-void cpu_tasks::generateRandomMatrix(std::vector<std::vector<int>> &matrix) {
+std::vector<std::vector<int>> cpu_tasks::generateRandomMatrix(size_t N) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(0, 10);
-    size_t N = matrix.size();
+
+    std::vector<std::vector<int>> matrix(N, std::vector<int>(N));
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
             matrix[i][j] = dist(gen);
         }
     }
+    return matrix;
 }
 
-void cpu_tasks::matrixMultiplyCPU(std::vector<std::vector<int>> &A,
-                                 std::vector<std::vector<int>> &B,
-                                 std::vector<std::vector<int>> &C,
-                                     size_t N) {
-    generateRandomMatrix(A);
+void cpu_tasks::matrixMultiplyCPU(size_t N) {
+    matrixA = generateRandomMatrix(N);
     std::cout << "Matrix A:\n";
-    printMatrix(A);
-    generateRandomMatrix(B);                        
+    printMatrix(matrixA);
+    matrixB = generateRandomMatrix(N);                        
     std::cout << "Matrix B:\n";
-    printMatrix(B);
+    printMatrix(matrixB);
 
+    matrixC.resize(N, std::vector<int>(N, 0));
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
-            C[i][j] = 0;
+            matrixC[i][j] = 0;
             for (size_t k = 0; k < N; ++k) {
-                C[i][j] += A[i][k] * B[k][j];
+                matrixC[i][j] += matrixA[i][k] * matrixB[k][j];
             }
         }
     }
 
     std::cout << "Matrix multiplication result:\n";
-    printMatrix(C);
+    printMatrix(matrixC);
 }
