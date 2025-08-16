@@ -14,19 +14,16 @@ int main() {
     // std::cout << "Gaussian blur done. Output saved as blurred.ppm\n";
 
     // 2. Matrix multiplication
-    // size_t N = 5; // Size of the matrices
-    // cpu_tasks cpuObj;
-    // cpuObj.matrixMultiplyCPU(N);
+    size_t N1 = 5; // Size of the matrices
+    cpu_tasks cpuObj;
+    cpuObj.matrixMultiplyCPU(N1);
 
 
-    size_t N = 4; // Size of the matrices
-    gpu_tasks gpuMat(N);
+    size_t N2 = 5; // Size of the matrices
+    gpu_tasks gpuMat;
 
     std::cout << "Running GPU Matrix Multiplication...\n";
-    gpuMat.matrixMultiplyGPU();
-
-    std::cout << "Result Matrix C:\n";
-    gpuMat.printResult();
+    gpuMat.matrixMultiplyGPU(N2);
 
     return 0;
 }
