@@ -1,4 +1,5 @@
 #include "cpu_tasks.h"
+#include "metrics.h"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -87,6 +88,9 @@ void cpu_tasks::matrixMultiplyCPU(size_t N) {
     std::cout << "Matrix B:\n";
     printMatrix(matrixB);
 
+    metrics timer;
+    timer.start();
+
     matrixC.resize(N, std::vector<int>(N, 0));
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
@@ -97,6 +101,8 @@ void cpu_tasks::matrixMultiplyCPU(size_t N) {
         }
     }
 
-    std::cout << "Matrix multiplication result:\n";
+    timer.stop();
+
+    std::cout << "[CPU] Matrix multiplication result:\n";
     printMatrix(matrixC);
 }
