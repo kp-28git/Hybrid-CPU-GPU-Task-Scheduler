@@ -1,15 +1,11 @@
 #include "gpu_tasks.h"
+#include "metrics.h"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <random>
 
-gpu_tasks::gpu_tasks(size_t N) : N(N), matrixA(N*N), matrixB(N*N), matrixC(N*N, 0.0f) {
-    // Fill matrices with example values
-    for (size_t i = 0; i < N*N; ++i) {
-        matrixA[i] = static_cast<float>(i + 1);
-        matrixB[i] = static_cast<float>((i % N) + 1);
-    }
-
+gpu_tasks::gpu_tasks() {
     initOpenCL();
 }
 
@@ -55,18 +51,66 @@ void gpu_tasks::initOpenCL() {
     kernel = clCreateKernel(program, "matMul", &err);
 }
 
-void gpu_tasks::matrixMultiplyGPU() {
+void gpu_tasks::printMatrix(std::vector<std::vector<int>> &matrix) {
+    size_t N = matrix.size();
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            std::cout << matrix[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+std::vector<std::vector<int>> gpu_tasks::generateRandomMatrix(size_t N) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(0, 10);
+
+    std::vector<std::vector<int>> matrix(N, std::vector<int>(N));
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            matrix[i][j] = dist(gen);
+        }
+    }
+    return matrix;
+}
+
+void gpu_tasks::matrixMultiplyGPU(size_t N) {
+    
+    matrixA = generateRandomMatrix(N);
+    matrixB = generateRandomMatrix(N);
+
+    std::cout << "Matrix A:\n";
+    printMatrix(matrixA);
+    std::cout << "Matrix B:\n";
+    printMatrix(matrixB);
+
+    metrics timer;
+    timer.start();
+
+    // Flatten matrices for GPU
+    std::vector<int> flatA(N * N);
+    std::vector<int> flatB(N * N);
+    std::vector<int> flatC(N * N, 0);
+
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j) {
+            flatA[i * N + j] = matrixA[i][j];
+            flatB[i * N + j] = matrixB[i][j];
+        }
+
+        
     cl_int err;
 
-    // Buffers
+    // Create GPU buffers
     cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                 sizeof(float)*N*N, matrixA.data(), &err);
+                                 sizeof(int) * N * N, flatA.data(), &err);
     cl_mem bufB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                 sizeof(float)*N*N, matrixB.data(), &err);
+                                 sizeof(int) * N * N, flatB.data(), &err);
     cl_mem bufC = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                 sizeof(float)*N*N, nullptr, &err);
+                                 sizeof(int) * N * N, nullptr, &err);
 
-    // Kernel args
+    // Set kernel arguments
     clSetKernelArg(kernel, 0, sizeof(int), &N);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufA);
     clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufB);
@@ -77,25 +121,30 @@ void gpu_tasks::matrixMultiplyGPU() {
     err = clEnqueueNDRangeKernel(queue, kernel, 2, nullptr, global, nullptr, 0, nullptr, nullptr);
     clFinish(queue);
 
-    // Read result
-    err = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, sizeof(float)*N*N, matrixC.data(), 0, nullptr, nullptr);
+    // Read back the result
+    err = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, sizeof(int) * N * N, flatC.data(), 0, nullptr, nullptr);
 
-    // Cleanup buffers
+    // Release GPU buffers
     clReleaseMemObject(bufA);
     clReleaseMemObject(bufB);
     clReleaseMemObject(bufC);
 
-    std::cout << "[GPU] Matrix multiplication finished.\n";
+    // Cleanup OpenCL resources
+    cleanupOpenCL();
+
+    // Convert flatC back to 2D matrixC
+    matrixC.resize(N);
+    for (size_t i = 0; i < N; ++i) {
+        matrixC[i].resize(N);
+        for (size_t j = 0; j < N; ++j)
+            matrixC[i][j] = flatC[i * N + j];
+    }
+
+    timer.stop();
+    std::cout << "[GPU] Matrix multiplication result:\n";
+    printMatrix(matrixC);
 }
 
-void gpu_tasks::printResult() const {
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            std::cout << matrixC[i*N + j] << "\t";
-        }
-        std::cout << "\n";
-    }
-}
 
 void gpu_tasks::cleanupOpenCL() {
     clReleaseKernel(kernel);
