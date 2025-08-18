@@ -16,7 +16,7 @@ enum class Policy {
 
 class scheduler {
 public:
-    scheduler(Policy policy, size_t threshold = 100);
+    scheduler(Policy policy, size_t threshold = 5000);
 
     void addTask(const task& task);
     void run();
