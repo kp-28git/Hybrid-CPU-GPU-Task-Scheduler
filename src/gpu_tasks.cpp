@@ -77,13 +77,15 @@ std::vector<std::vector<int>> gpu_tasks::generateRandomMatrix(size_t N) {
 
 void gpu_tasks::matrixMultiplyGPU(size_t N) {
     
-    matrixA = generateRandomMatrix(N);
-    matrixB = generateRandomMatrix(N);
+    std::vector<std::vector<int>> matrixA = generateRandomMatrix(N);
+    std::vector<std::vector<int>> matrixB = generateRandomMatrix(N);
+    std::vector<std::vector<int>> matrixC(N, std::vector<int>(N, 0));
 
-    std::cout << "Matrix A:\n";
-    printMatrix(matrixA);
-    std::cout << "Matrix B:\n";
-    printMatrix(matrixB);
+
+    // std::cout << "Matrix A:\n";
+    // printMatrix(matrixA);
+    // std::cout << "Matrix B:\n";
+    // printMatrix(matrixB);
 
     metrics timer;
     timer.start();
@@ -99,7 +101,7 @@ void gpu_tasks::matrixMultiplyGPU(size_t N) {
             flatB[i * N + j] = matrixB[i][j];
         }
 
-        
+
     cl_int err;
 
     // Create GPU buffers
@@ -129,9 +131,6 @@ void gpu_tasks::matrixMultiplyGPU(size_t N) {
     clReleaseMemObject(bufB);
     clReleaseMemObject(bufC);
 
-    // Cleanup OpenCL resources
-    cleanupOpenCL();
-
     // Convert flatC back to 2D matrixC
     matrixC.resize(N);
     for (size_t i = 0; i < N; ++i) {
@@ -141,8 +140,8 @@ void gpu_tasks::matrixMultiplyGPU(size_t N) {
     }
 
     timer.stop();
-    std::cout << "[GPU] Matrix multiplication result:\n";
-    printMatrix(matrixC);
+    // std::cout << "[GPU] Matrix multiplication result:\n";
+    // printMatrix(matrixC);
 }
 
 
@@ -151,4 +150,8 @@ void gpu_tasks::cleanupOpenCL() {
     clReleaseProgram(program);
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
+}
+
+gpu_tasks::~gpu_tasks() {
+    cleanupOpenCL();
 }

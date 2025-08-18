@@ -9,15 +9,13 @@
 class gpu_tasks {
 public:
     gpu_tasks();
+    ~gpu_tasks();
 
     // Perform GPU matrix multiplication
     void matrixMultiplyGPU(size_t N);
 
 private:
     size_t N;
-    std::vector<std::vector<int>> matrixA;
-    std::vector<std::vector<int>> matrixB;
-    std::vector<std::vector<int>> matrixC;
 
     // OpenCL objects
     cl_platform_id platform;
