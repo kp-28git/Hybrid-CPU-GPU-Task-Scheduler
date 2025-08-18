@@ -115,3 +115,32 @@ void cpu_tasks::vectorAddCPU(size_t N) {
 
     timer.stop();
 }
+
+void cpu_tasks::sortingCPU(size_t N) {
+    auto vec = generateRandomVector(N);
+    metrics timer;
+    timer.start();
+
+    bool sorted = false;
+    while (!sorted) {
+        sorted = true;
+
+        // Odd phase
+        for (size_t i = 1; i + 1 < N; i += 2) {
+            if (vec[i] > vec[i + 1]) {
+                std::swap(vec[i], vec[i + 1]);
+                sorted = false;
+            }
+        }
+
+        // Even phase
+        for (size_t i = 0; i + 1 < N; i += 2) {
+            if (vec[i] > vec[i + 1]) {
+                std::swap(vec[i], vec[i + 1]);
+                sorted = false;
+            }
+        }
+    }
+
+    timer.stop();
+}

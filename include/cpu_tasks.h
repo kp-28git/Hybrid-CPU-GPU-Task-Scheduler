@@ -21,6 +21,9 @@ public:
     //Vector Addition
     void vectorAddCPU(size_t N);
 
+    // Odd-Even Sort
+    void sortingCPU(size_t N);
+
 private:
 
     static Image readPPM(const std::string &filename);
