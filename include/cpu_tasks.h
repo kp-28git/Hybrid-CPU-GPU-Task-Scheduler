@@ -18,13 +18,16 @@ public:
     // Matrix operations
     void matrixMultiplyCPU(size_t N);
 
+    //Vector Addition
+    void vectorAddCPU(size_t N);
+
 private:
 
     static Image readPPM(const std::string &filename);
     static void writePPM(const std::string &filename, const Image &img);
 
-    static void printMatrix(std::vector<std::vector<int>> &matrix);
-    static std::vector<unsigned long long> generateRandomMatrix(size_t N);
+    static void printVector(const std::vector<int> &vec);
+    static std::vector<int> generateRandomVector(size_t N);
 };
 
 #endif // CPU_TASKS_H
