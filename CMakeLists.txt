@@ -16,6 +16,8 @@ set(SOURCES
     src/cpu_tasks.cpp
     src/gpu_tasks.cpp
     src/metrics.cpp
+    src/scheduler.cpp
+    src/task.cpp
 )
 
 # Create executable
