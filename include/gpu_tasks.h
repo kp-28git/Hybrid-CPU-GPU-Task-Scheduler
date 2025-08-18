@@ -17,6 +17,9 @@ public:
     // Perform GPU vector addition
     void vectorAddGPU(size_t N);
 
+    // Perform GPU sorting (odd-even sort)
+    void sortingGPU(size_t N);
+
 private:
     size_t N;
 

@@ -181,6 +181,49 @@ void gpu_tasks::vectorAddGPU(size_t N) {
     // printVector(vecC);
 }
 
+void gpu_tasks::sortingGPU(size_t N) {
+    auto vec = generateRandomVector(N);
+
+    metrics timer;
+    timer.start();
+
+    cl_int err;
+    cl_mem buf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                sizeof(int) * N, vec.data(), &err);
+
+    cl_program prog = nullptr;
+    cl_kernel kern = buildKernelFromFile(context, device, "kernels/sort.cl", "sort", &prog);
+
+    size_t global[1] = { N / 2 };
+
+    for (int phase = 0; phase < N; phase++) {
+        int parity = phase % 2;
+        err  = clSetKernelArg(kern, 0, sizeof(cl_mem), &buf);
+        err |= clSetKernelArg(kern, 1, sizeof(int), &parity);
+        err |= clSetKernelArg(kern, 2, sizeof(int), &N);
+        if (err != CL_SUCCESS)
+            throw std::runtime_error("clSetKernelArg failed (sorting)");
+
+        err = clEnqueueNDRangeKernel(queue, kern, 1, nullptr, global, nullptr,
+                                     0, nullptr, nullptr);
+        if (err != CL_SUCCESS)
+            throw std::runtime_error("clEnqueueNDRangeKernel failed (sorting)");
+        clFinish(queue);
+    }
+
+    // Read back
+    err = clEnqueueReadBuffer(queue, buf, CL_TRUE, 0,
+                              sizeof(int) * N, vec.data(),
+                              0, nullptr, nullptr);
+    if (err != CL_SUCCESS)
+        throw std::runtime_error("clEnqueueReadBuffer failed (sorting)");
+
+    clReleaseMemObject(buf);
+
+    timer.stop();
+}
+
+
 void gpu_tasks::cleanupOpenCL() {
     clReleaseDevice(device);
     clReleaseContext(context);
