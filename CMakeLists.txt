@@ -27,4 +27,4 @@ add_executable(hybrid_scheduler_cpu ${SOURCES})
 target_link_libraries(hybrid_scheduler_cpu ${OpenCL_LIBRARIES})
 
 # Copy kernel file(s) to build directory
-file(COPY ${CMAKE_SOURCE_DIR}/kernels/matmul.cl DESTINATION ${CMAKE_BINARY_DIR}/kernels)
+file(COPY ${CMAKE_SOURCE_DIR}/kernels DESTINATION ${CMAKE_BINARY_DIR})
