@@ -14,26 +14,29 @@ public:
     // Perform GPU matrix multiplication
     void matrixMultiplyGPU(size_t N);
 
+    // Perform GPU vector addition
+    void vectorAddGPU(size_t N);
+
 private:
     size_t N;
 
     // OpenCL objects
-    cl_platform_id platform;
-    cl_device_id device;
-    cl_context context;
-    cl_command_queue queue;
-    cl_program program;
-    cl_kernel kernel;
+    cl_platform_id platform = nullptr;
+    cl_device_id device = nullptr;
+    cl_context context = nullptr;
+    cl_command_queue queue = nullptr;
 
     void initOpenCL();
+    static cl_kernel buildKernelFromFile(cl_context ctx, cl_device_id dev,
+                                         const std::string& path,
+                                         const char* kernelName,
+                                         cl_program* outProgram = nullptr);
     std::string loadKernel(const std::string &filename);
     void cleanupOpenCL();
 
-    // Print result matrix
-    void printMatrix(std::vector<std::vector<int>> &matrix);
+    void printVector(const std::vector<int> &vec);
 
-    // Generate a random NxN matrix
-    std::vector<std::vector<int>> generateRandomMatrix(size_t N);
+    std::vector<int> generateRandomVector(size_t N);
 };
 
 #endif // GPU_TASKS_H

@@ -21,135 +21,170 @@ void gpu_tasks::initOpenCL() {
 
     // Platform
     err = clGetPlatformIDs(1, &platform, nullptr);
+    if (err != CL_SUCCESS) throw std::runtime_error("clGetPlatformIDs failed");
 
     // Device (first GPU)
     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, nullptr);
+    if (err != CL_SUCCESS) throw std::runtime_error("clGetDeviceIDs failed");
 
     // Context & Queue
     context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
-    cl_queue_properties props[] = { 0 }; // empty properties
+    if (!context || err != CL_SUCCESS) throw std::runtime_error("clCreateContext failed");
+
+    cl_queue_properties props[] = { 0 };
     queue = clCreateCommandQueueWithProperties(context, device, props, &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to create OpenCL command queue");
-    }
+    if (!queue || err != CL_SUCCESS) throw std::runtime_error("clCreateCommandQueueWithProperties failed");
+}
 
-    // Load and build kernel
-    std::string src = loadKernel("kernels/matmul.cl");
-    const char* srcPtr = src.c_str();
-    size_t srcLen = src.size();
-    program = clCreateProgramWithSource(context, 1, &srcPtr, &srcLen, &err);
-    err = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
+cl_kernel gpu_tasks::buildKernelFromFile(cl_context ctx, cl_device_id dev,
+                                     const std::string& path, const char* kernelName,
+                                     cl_program* outProgram /* to release later */)
+{
+    cl_int err;
+    // load source
+    std::ifstream f(path);
+    if (!f.is_open()) throw std::runtime_error("Cannot open kernel file: " + path);
+    std::string src((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    const char* sp = src.c_str();
+    size_t sl = src.size();
+
+    // create + build program
+    cl_program prog = clCreateProgramWithSource(ctx, 1, &sp, &sl, &err);
+    if (!prog || err != CL_SUCCESS) throw std::runtime_error("clCreateProgramWithSource failed");
+
+    err = clBuildProgram(prog, 1, &dev, nullptr, nullptr, nullptr);
     if (err != CL_SUCCESS) {
-        size_t log_size;
-        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
+        size_t log_size = 0;
+        clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
         std::vector<char> log(log_size);
-        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_size, log.data(), nullptr);
-        std::cerr << "Build log:\n" << log.data() << std::endl;
-        throw std::runtime_error("Failed to build OpenCL program");
+        clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, log_size, log.data(), nullptr);
+        std::cerr << "Build log (" << path << "):\n" << log.data() << std::endl;
+        clReleaseProgram(prog);
+        throw std::runtime_error("clBuildProgram failed");
     }
 
-    kernel = clCreateKernel(program, "matMul", &err);
-}
-
-void gpu_tasks::printMatrix(std::vector<std::vector<int>> &matrix) {
-    size_t N = matrix.size();
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            std::cout << matrix[i][j] << " ";
-        }
-        std::cout << std::endl;
+    cl_kernel k = clCreateKernel(prog, kernelName, &err);
+    if (!k || err != CL_SUCCESS) {
+        clReleaseProgram(prog);
+        throw std::runtime_error(std::string("clCreateKernel failed for ") + kernelName);
     }
+
+    if (outProgram) *outProgram = prog; // return program so caller can release
+    return k;
 }
 
-std::vector<std::vector<int>> gpu_tasks::generateRandomMatrix(size_t N) {
+void gpu_tasks::printVector(const std::vector<int> &vec) {
+    for (const auto &val : vec) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+}
+
+std::vector<int> gpu_tasks::generateRandomVector(size_t N) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(0, 10);
 
-    std::vector<std::vector<int>> matrix(N, std::vector<int>(N));
+    std::vector<int> vec(N);
     for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            matrix[i][j] = dist(gen);
-        }
+        vec[i] = dist(gen);
     }
-    return matrix;
+    return vec;
 }
 
 void gpu_tasks::matrixMultiplyGPU(size_t N) {
-    
-    std::vector<std::vector<int>> matrixA = generateRandomMatrix(N);
-    std::vector<std::vector<int>> matrixB = generateRandomMatrix(N);
-    std::vector<std::vector<int>> matrixC(N, std::vector<int>(N, 0));
-
-
-    // std::cout << "Matrix A:\n";
-    // printMatrix(matrixA);
-    // std::cout << "Matrix B:\n";
-    // printMatrix(matrixB);
+    auto matA = generateRandomVector(N * N);
+    auto matB = generateRandomVector(N * N);
+    std::vector<int> matC(N * N, 0);
 
     metrics timer;
     timer.start();
 
-    // Flatten matrices for GPU
-    std::vector<int> flatA(N * N);
-    std::vector<int> flatB(N * N);
-    std::vector<int> flatC(N * N, 0);
-
-    for (size_t i = 0; i < N; ++i)
-        for (size_t j = 0; j < N; ++j) {
-            flatA[i * N + j] = matrixA[i][j];
-            flatB[i * N + j] = matrixB[i][j];
-        }
-
-
     cl_int err;
+    cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(int) * N * N, matA.data(), &err);
+    cl_mem bufB = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(int) * N * N, matB.data(), &err);
+    cl_mem bufC = clCreateBuffer(context, CL_MEM_WRITE_ONLY,                        sizeof(int) * N * N, nullptr, &err);
 
-    // Create GPU buffers
-    cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                 sizeof(int) * N * N, flatA.data(), &err);
-    cl_mem bufB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                 sizeof(int) * N * N, flatB.data(), &err);
-    cl_mem bufC = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                 sizeof(int) * N * N, nullptr, &err);
+    // Load kernel
+    cl_program prog = nullptr;
+    cl_kernel kern = buildKernelFromFile(context, device, "kernels/matmul.cl", "matmul", &prog);
 
-    // Set kernel arguments
-    clSetKernelArg(kernel, 0, sizeof(int), &N);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufA);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufB);
-    clSetKernelArg(kernel, 3, sizeof(cl_mem), &bufC);
+    // Set kernel args
+    err  = clSetKernelArg(kern, 0, sizeof(cl_mem), &bufA);
+    err |= clSetKernelArg(kern, 1, sizeof(cl_mem), &bufB);
+    err |= clSetKernelArg(kern, 2, sizeof(cl_mem), &bufC);
+    err |= clSetKernelArg(kern, 3, sizeof(int),    &N);
+    if (err != CL_SUCCESS) throw std::runtime_error("clSetKernelArg failed (matmul)");
 
-    // Launch kernel
+    // Global work size: 2D grid (N x N)
     size_t global[2] = { N, N };
-    err = clEnqueueNDRangeKernel(queue, kernel, 2, nullptr, global, nullptr, 0, nullptr, nullptr);
+    err = clEnqueueNDRangeKernel(queue, kern, 2, nullptr, global, nullptr, 0, nullptr, nullptr);
+    if (err != CL_SUCCESS) throw std::runtime_error("clEnqueueNDRangeKernel failed (matmul)");
     clFinish(queue);
 
-    // Read back the result
-    err = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, sizeof(int) * N * N, flatC.data(), 0, nullptr, nullptr);
+    // Read back result
+    err = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, sizeof(int) * N * N, matC.data(), 0, nullptr, nullptr);
+    if (err != CL_SUCCESS) throw std::runtime_error("clEnqueueReadBuffer failed (matmul)");
 
-    // Release GPU buffers
+    // Release
     clReleaseMemObject(bufA);
     clReleaseMemObject(bufB);
     clReleaseMemObject(bufC);
-
-    // Convert flatC back to 2D matrixC
-    matrixC.resize(N);
-    for (size_t i = 0; i < N; ++i) {
-        matrixC[i].resize(N);
-        for (size_t j = 0; j < N; ++j)
-            matrixC[i][j] = flatC[i * N + j];
-    }
+    clReleaseKernel(kern);
+    clReleaseProgram(prog);
 
     timer.stop();
-    // std::cout << "[GPU] Matrix multiplication result:\n";
-    // printMatrix(matrixC);
 }
 
+void gpu_tasks::vectorAddGPU(size_t N) {
+    auto vecA = generateRandomVector(N);
+    auto vecB = generateRandomVector(N);
+    std::vector<int> vecC(N, 0);
+
+    metrics timer;
+    timer.start();
+
+    cl_int err;
+    cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(int)*N, vecA.data(), &err);
+    cl_mem bufB = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(int)*N, vecB.data(), &err);
+    cl_mem bufC = clCreateBuffer(context, CL_MEM_WRITE_ONLY,                        sizeof(int)*N, nullptr,     &err);
+
+    cl_program prog = nullptr;
+    cl_kernel  kern = buildKernelFromFile(context, device, "kernels/vecadd.cl", "vectoradd", &prog);
+
+    // Set kernel args
+    err  = clSetKernelArg(kern, 0, sizeof(cl_mem), &bufA);
+    err |= clSetKernelArg(kern, 1, sizeof(cl_mem), &bufB);
+    err |= clSetKernelArg(kern, 2, sizeof(cl_mem), &bufC);
+    err |= clSetKernelArg(kern, 3, sizeof(int),    &N);
+    if (err != CL_SUCCESS) throw std::runtime_error("clSetKernelArg failed (vectoradd)");
+
+    size_t global[1] = { N };
+    err = clEnqueueNDRangeKernel(queue, kern, 1, nullptr, global, nullptr, 0, nullptr, nullptr);
+    if (err != CL_SUCCESS) throw std::runtime_error("clEnqueueNDRangeKernel failed (vectoradd)");
+    clFinish(queue);
+
+    err = clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, sizeof(int)*N, vecC.data(), 0, nullptr, nullptr);
+    if (err != CL_SUCCESS) throw std::runtime_error("clEnqueueReadBuffer failed (vectoradd)");
+
+    clReleaseMemObject(bufA);
+    clReleaseMemObject(bufB);
+    clReleaseMemObject(bufC);
+    clReleaseKernel(kern);
+    clReleaseProgram(prog);
+
+    timer.stop();
+
+    // Debug prints if you want:
+    // printVector(vecA); 
+    // printVector(vecB); 
+    // printVector(vecC);
+}
 
 void gpu_tasks::cleanupOpenCL() {
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    clReleaseCommandQueue(queue);
+    clReleaseDevice(device);
     clReleaseContext(context);
+    clReleaseCommandQueue(queue);
 }
 
 gpu_tasks::~gpu_tasks() {
