@@ -1,8 +1,7 @@
-__kernel void matMul(
-    const int N,
-    __global const int *A,
-    __global const int *B,
-    __global int *C)
+__kernel void matmul(__global const int *A,
+                     __global const int *B,
+                     __global int *C,
+                     const int N)
 {
     int row = get_global_id(0);
     int col = get_global_id(1);
