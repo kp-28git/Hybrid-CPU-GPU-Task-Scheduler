@@ -66,43 +66,51 @@ void cpu_tasks::printMatrix(std::vector<std::vector<int>> &matrix) {
     }
 }
 
-std::vector<std::vector<int>> cpu_tasks::generateRandomMatrix(size_t N) {
+std::vector<unsigned long long> cpu_tasks::generateRandomMatrix(size_t N) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist(0, 10);
 
-    std::vector<std::vector<int>> matrix(N, std::vector<int>(N));
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            matrix[i][j] = dist(gen);
-        }
+    std::vector<unsigned long long> matrix(N*N, 0);
+    for (size_t i = 0; i < matrix.size(); ++i) {
+            matrix.at(i) = dist(gen);
     }
     return matrix;
 }
 
 void cpu_tasks::matrixMultiplyCPU(size_t N) {
-    matrixA = generateRandomMatrix(N);
-    std::cout << "Matrix A:\n";
-    printMatrix(matrixA);
-    matrixB = generateRandomMatrix(N);                        
-    std::cout << "Matrix B:\n";
-    printMatrix(matrixB);
+    
+    std::vector<unsigned long long> matrixA(N * N);
+    std::vector<unsigned long long> matrixB(N * N);
+    std::vector<unsigned long long> matrixC(N * N, 0);
+
+    matrixA = generateRandomMatrix(N);    
+    matrixB = generateRandomMatrix(N);
+    // std::cout << "Matrix A:\n";
+    // printMatrix(matrixA);
+    // std::cout << "Matrix B:\n";
+    // printMatrix(matrixB);
 
     metrics timer;
     timer.start();
 
-    matrixC.resize(N, std::vector<int>(N, 0));
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            matrixC[i][j] = 0;
-            for (size_t k = 0; k < N; ++k) {
-                matrixC[i][j] += matrixA[i][k] * matrixB[k][j];
+    auto idx = [N](size_t row, size_t col) {
+    return row * N + col;
+    };
+
+    for (size_t i = 0; i < N; i++) {
+        for (size_t j = 0; j < N; j++) {
+            unsigned long long sum = 0;
+            for (size_t k = 0; k < N; k++) {
+                sum += matrixA[idx(i, k)] * matrixB[idx(k, j)];
             }
+            matrixC[idx(i, j)] = sum;
         }
     }
 
+
     timer.stop();
 
-    std::cout << "[CPU] Matrix multiplication result:\n";
-    printMatrix(matrixC);
+    // std::cout << "[CPU] Matrix multiplication result:\n";
+    // printMatrix(matrixC);
 }

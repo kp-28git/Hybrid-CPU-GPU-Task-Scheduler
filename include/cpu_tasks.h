@@ -19,15 +19,12 @@ public:
     void matrixMultiplyCPU(size_t N);
 
 private:
-    std::vector<std::vector<int>> matrixA;
-    std::vector<std::vector<int>> matrixB;
-    std::vector<std::vector<int>> matrixC;
 
     static Image readPPM(const std::string &filename);
     static void writePPM(const std::string &filename, const Image &img);
 
     static void printMatrix(std::vector<std::vector<int>> &matrix);
-    static std::vector<std::vector<int>> generateRandomMatrix(size_t N);
+    static std::vector<unsigned long long> generateRandomMatrix(size_t N);
 };
 
 #endif // CPU_TASKS_H
