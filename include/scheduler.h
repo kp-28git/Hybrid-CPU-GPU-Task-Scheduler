@@ -2,10 +2,13 @@
 #define SCHEDULER_H
 
 #include "task.h"
+#include "cpu_tasks.h"
+#include "gpu_tasks.h"
 #include <queue>
 #include <mutex>
 #include <thread>
-#include <condition_variable>
+#include <map>
+#include <functional>
 
 enum class Policy {
     SOLE_CPU,
@@ -18,12 +21,25 @@ class scheduler {
 public:
     scheduler(Policy policy, size_t threshold = 5000);
 
-    void addTask(const task& task);
+    void addTask(task& task);
     void run();
 
 private:
-    std::queue<task> tasks;
-    std::mutex mtx;
+    void runCPU();
+    void runGPU();
+
+    cpu_tasks cpu;
+    gpu_tasks gpu;
+
+    std::map<operation, std::function<void(size_t N)>> cpuOperations;
+    std::map<operation, std::function<void(size_t N)>> gpuOperations;
+
+    std::queue<task> cpuTasks;
+    std::queue<task> gpuTasks;
+    
+    std::mutex cpuMtx;
+    std::mutex gpuMtx;
+
     Policy policy;
     size_t threshold;
     bool cpuTurn = true; // For round-robin

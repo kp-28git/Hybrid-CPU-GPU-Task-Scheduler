@@ -2,44 +2,78 @@
 #include <iostream>
 
 scheduler::scheduler(Policy policy, size_t threshold)
-    : policy(policy), threshold(threshold) {}
+    : policy(policy), threshold(threshold) {
 
-void scheduler::addTask(const task& task) {
-    std::lock_guard<std::mutex> lock(mtx);
-    tasks.push(task);
+    cpuOperations = {
+        {operation::MATRIX_MULTIPLY, [&](size_t N) { cpu.matrixMultiplyCPU(N); }},
+        {operation::VECTOR_ADD, [&](size_t N) { cpu.vectorAddCPU(N); }},
+        {operation::SORTING, [&](size_t N) { cpu.sortingCPU(N); }}
+    };
+    gpuOperations = {
+        {operation::MATRIX_MULTIPLY, [&](size_t N) { gpu.matrixMultiplyGPU(N); }},
+        {operation::VECTOR_ADD, [&](size_t N) { gpu.vectorAddGPU(N); }},
+        {operation::SORTING, [&](size_t N) { gpu.sortingGPU(N); }}
+    };
+
+}
+
+void scheduler::addTask(task& task) {
+    if(policy == Policy::SOLE_CPU) {
+        task.assignWork(cpuOperations[task.op]);
+        cpuTasks.push(task);
+    }
+    else if(policy == Policy::SOLE_GPU) {
+        task.assignWork(gpuOperations[task.op]);
+        gpuTasks.push(task);
+    }
+    else if(policy == Policy::ROUND_ROBIN) {
+        if (cpuTurn) {
+            task.assignWork(cpuOperations[task.op]);
+            cpuTasks.push(task);
+        }   
+        else {
+            task.assignWork(gpuOperations[task.op]);
+            gpuTasks.push(task);
+        }
+        cpuTurn = !cpuTurn;
+    }
+    else if(policy == Policy::DATA_SIZE_BASED) {
+        if (task.getDataSize() < threshold) {
+            task.assignWork(cpuOperations[task.op]);
+            cpuTasks.push(task);
+        } else {
+            task.assignWork(gpuOperations[task.op]);
+            gpuTasks.push(task);
+        }
+    }
+}
+
+void scheduler::runCPU() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(cpuMtx);
+        if (cpuTasks.empty()) break;
+        task t = std::move(cpuTasks.front());
+        cpuTasks.pop();
+        lock.unlock();
+        t.runTask();
+    }
+}
+
+void scheduler::runGPU() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(gpuMtx);
+        if (gpuTasks.empty()) break;
+        task t = std::move(gpuTasks.front());
+        gpuTasks.pop();
+        lock.unlock();
+        t.runTask();
+    }
 }
 
 void scheduler::run() {
-    while (!tasks.empty()) {
-        task task = tasks.front();
-        tasks.pop();
+    std::thread cpuThread(&scheduler::runCPU, this);
+    std::thread gpuThread(&scheduler::runGPU, this);
 
-        if (policy == Policy::SOLE_CPU) {
-            std::cout << "[CPU] Executing: " << task.getName() << "\n";
-            task.runCPU();
-        }
-        else if (policy == Policy::SOLE_GPU) {
-            std::cout << "[GPU] Executing: " << task.getName() << "\n";
-            task.runGPU();
-        }
-        else if (policy == Policy::ROUND_ROBIN) {
-            if (cpuTurn) {
-                std::cout << "[CPU] Executing: " << task.getName() << "\n";
-                task.runCPU();
-            } else {
-                std::cout << "[GPU] Executing: " << task.getName() << "\n";
-                task.runGPU();
-            }
-            cpuTurn = !cpuTurn; // alternate
-        }
-        else if (policy == Policy::DATA_SIZE_BASED) {
-            if (task.getDataSize() < threshold) {
-                std::cout << "[CPU] Executing: " << task.getName() << "\n";
-                task.runCPU();
-            } else {
-                std::cout << "[GPU] Executing: " << task.getName() << "\n";
-                task.runGPU();
-            }
-        }
-    }
+    cpuThread.join();
+    gpuThread.join();
 }
