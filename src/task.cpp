@@ -2,19 +2,27 @@
 #include <iostream>
 
 task::task(operation op, size_t dataSize)
-    : op(op), dataSize(dataSize) {}
+    : op(op), dataSize(dataSize) {
+        name = operationNames[op] + "-" + std::to_string(dataSize);
+    }
 
-const std::string& task::getName() const {
-    return name;
-}
-
-size_t task::getDataSize() const {
-    return dataSize;
+size_t task::getComputationSize() const {
+    size_t computationSize = dataSize;
+    if (op == operation::MATRIX_MULTIPLY || op == operation::VECTOR_ADD) {
+        computationSize *= dataSize;
+    }
+    else if (op == operation::SORTING) {
+        computationSize = dataSize;
+    }
+    return computationSize;
 }
 
 void task::runTask() {
-    std::cout << "Running task: \n";
+    std::string ex = (executionunit == executionUnit::CPU) ? " [CPU]" : " [GPU]";
+    std::cout << "Running task: "<< name <<ex <<"\n";
+    metrics::start();
     if (work) work(dataSize);
+    metrics::stop();
 }
 
 void task::assignWork(std::function<void(size_t N)> workFunc) {
