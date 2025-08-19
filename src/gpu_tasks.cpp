@@ -134,6 +134,8 @@ void gpu_tasks::matrixMultiplyGPU(size_t N) {
     clReleaseProgram(prog);
 
     timer.stop();
+    // std::cout << "[GPU] Result for matrix multiplication:\n";
+    // printVector(matC);
 }
 
 void gpu_tasks::vectorAddGPU(size_t N) {
@@ -175,9 +177,7 @@ void gpu_tasks::vectorAddGPU(size_t N) {
 
     timer.stop();
 
-    // Debug prints if you want:
-    // printVector(vecA); 
-    // printVector(vecB); 
+    // std::cout << "[GPU] Result for vector addition:\n";
     // printVector(vecC);
 }
 
@@ -221,6 +221,9 @@ void gpu_tasks::sortingGPU(size_t N) {
     clReleaseMemObject(buf);
 
     timer.stop();
+    
+    // std::cout << "[GPU] Result for sorting : ";
+    // printVector(vec);
 }
 
 
