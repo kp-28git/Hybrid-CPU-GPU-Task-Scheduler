@@ -1,10 +1,8 @@
 #include "task.h"
+#include <iostream>
 
-task::task(const std::string& name, size_t dataSize,
-           std::function<void()> cpuFunc,
-           std::function<void()> gpuFunc)
-    : name(name), dataSize(dataSize*dataSize),
-      cpuWork(cpuFunc), gpuWork(gpuFunc) {}
+task::task(operation op, size_t dataSize)
+    : op(op), dataSize(dataSize) {}
 
 const std::string& task::getName() const {
     return name;
@@ -14,10 +12,11 @@ size_t task::getDataSize() const {
     return dataSize;
 }
 
-void task::runCPU() const {
-    if (cpuWork) cpuWork();
+void task::runTask() {
+    std::cout << "Running task: \n";
+    if (work) work(dataSize);
 }
 
-void task::runGPU() const {
-    if (gpuWork) gpuWork();
+void task::assignWork(std::function<void(size_t N)> workFunc) {
+    work = workFunc;
 }

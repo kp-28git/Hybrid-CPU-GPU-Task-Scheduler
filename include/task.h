@@ -4,23 +4,28 @@
 #include <functional>
 #include <string>
 
+enum class operation {
+    MATRIX_MULTIPLY,
+    VECTOR_ADD,
+    SORTING
+};
+
 class task {
 public:
-    task(const std::string& name, size_t dataSize,
-         std::function<void()> cpuFunc,
-         std::function<void()> gpuFunc);
+    task(operation op, size_t dataSize);
 
     const std::string& getName() const;
     size_t getDataSize() const;
 
-    void runCPU() const;
-    void runGPU() const;
+    operation op;
+    size_t dataSize;
+    std::string name;
+    
+    void runTask();
+    void assignWork(std::function<void(size_t N)> workFunc);
 
 private:
-    std::string name;
-    size_t dataSize;
-    std::function<void()> cpuWork;
-    std::function<void()> gpuWork;
+    std::function<void(size_t N)> work;
 };
 
 #endif // TASK_H
