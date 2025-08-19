@@ -9,7 +9,7 @@ void metrics::start() {
 void metrics::stop() {
     endTime = std::chrono::high_resolution_clock::now();
     double ms = std::chrono::duration<double, std::milli>(endTime - startTime).count();
-    std::cout << "[" << taskName << "] Elapsed time: " << ms << " ms\n";
+    std::cout << "Elapsed time: " << ms << " ms\n";
 }
 
 double metrics::elapsedMs() const {
