@@ -99,6 +99,8 @@ void cpu_tasks::matrixMultiplyCPU(size_t N) {
     }
 
     timer.stop();
+    // std::cout << "[CPU] Result for matrix multiplication : ";
+    // printVector(matrixC);
 }
 
 void cpu_tasks::vectorAddCPU(size_t N) {
@@ -114,6 +116,8 @@ void cpu_tasks::vectorAddCPU(size_t N) {
     }
 
     timer.stop();
+    // std::cout << "[CPU] Result for vector addition : ";
+    // printVector(vecC);
 }
 
 void cpu_tasks::sortingCPU(size_t N) {
@@ -143,4 +147,6 @@ void cpu_tasks::sortingCPU(size_t N) {
     }
 
     timer.stop();
+    // std::cout << "[CPU] Result for sorting : ";
+    // printVector(vec);
 }
