@@ -97,8 +97,8 @@ void gpu_tasks::matrixMultiplyGPU(size_t N) {
     auto matB = generateRandomVector(N * N);
     std::vector<int> matC(N * N, 0);
 
-    metrics timer;
-    timer.start();
+    // metrics timer;
+    // timer.start();
 
     cl_int err;
     cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(int) * N * N, matA.data(), &err);
@@ -133,7 +133,8 @@ void gpu_tasks::matrixMultiplyGPU(size_t N) {
     clReleaseKernel(kern);
     clReleaseProgram(prog);
 
-    timer.stop();
+    // timer.stop();
+
     // std::cout << "[GPU] Result for matrix multiplication:\n";
     // printVector(matC);
 }
@@ -143,8 +144,8 @@ void gpu_tasks::vectorAddGPU(size_t N) {
     auto vecB = generateRandomVector(N);
     std::vector<int> vecC(N, 0);
 
-    metrics timer;
-    timer.start();
+    // metrics timer;
+    // timer.start();
 
     cl_int err;
     cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(int)*N, vecA.data(), &err);
@@ -175,7 +176,7 @@ void gpu_tasks::vectorAddGPU(size_t N) {
     clReleaseKernel(kern);
     clReleaseProgram(prog);
 
-    timer.stop();
+    // timer.stop();
 
     // std::cout << "[GPU] Result for vector addition:\n";
     // printVector(vecC);
@@ -184,8 +185,8 @@ void gpu_tasks::vectorAddGPU(size_t N) {
 void gpu_tasks::sortingGPU(size_t N) {
     auto vec = generateRandomVector(N);
 
-    metrics timer;
-    timer.start();
+    // metrics timer;
+    // timer.start();
 
     cl_int err;
     cl_mem buf = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -220,7 +221,7 @@ void gpu_tasks::sortingGPU(size_t N) {
 
     clReleaseMemObject(buf);
 
-    timer.stop();
+    // timer.stop();
     
     // std::cout << "[GPU] Result for sorting : ";
     // printVector(vec);

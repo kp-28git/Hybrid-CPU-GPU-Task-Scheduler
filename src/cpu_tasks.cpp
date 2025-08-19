@@ -81,8 +81,8 @@ void cpu_tasks::matrixMultiplyCPU(size_t N) {
     auto matrixB = generateRandomVector(N * N);
     std::vector<int> matrixC(N * N, 0);
 
-    metrics timer;
-    timer.start();
+    // metrics timer;
+    // timer.start();
 
     auto idx = [N](size_t row, size_t col) {
     return row * N + col;
@@ -98,7 +98,8 @@ void cpu_tasks::matrixMultiplyCPU(size_t N) {
         }
     }
 
-    timer.stop();
+    // timer.stop();
+
     // std::cout << "[CPU] Result for matrix multiplication : ";
     // printVector(matrixC);
 }
@@ -108,22 +109,24 @@ void cpu_tasks::vectorAddCPU(size_t N) {
     auto vecB = generateRandomVector(N);
     std::vector<int> vecC(N, 0);
 
-    metrics timer;
-    timer.start();
+    // metrics timer;
+    // timer.start();
 
     for (size_t i = 0; i < vecC.size(); i++) {
         vecC[i] = vecA[i] + vecB[i];
     }
 
-    timer.stop();
+    // timer.stop();
+
     // std::cout << "[CPU] Result for vector addition : ";
     // printVector(vecC);
 }
 
 void cpu_tasks::sortingCPU(size_t N) {
     auto vec = generateRandomVector(N);
-    metrics timer;
-    timer.start();
+    
+    // metrics timer;
+    // timer.start();
 
     bool sorted = false;
     while (!sorted) {
@@ -146,7 +149,8 @@ void cpu_tasks::sortingCPU(size_t N) {
         }
     }
 
-    timer.stop();
+    // timer.stop();
+
     // std::cout << "[CPU] Result for sorting : ";
     // printVector(vec);
 }
