@@ -17,6 +17,13 @@ enum class Policy {
     DATA_SIZE_BASED
 };
 
+inline std::map<Policy, std::string> policyNames = {
+    {Policy::SOLE_CPU, "Sole CPU"},
+    {Policy::SOLE_GPU, "Sole GPU"},
+    {Policy::ROUND_ROBIN, "Round Robin"},
+    {Policy::DATA_SIZE_BASED, "Data Size Based"}
+};
+
 class scheduler {
 public:
     scheduler(Policy policy, size_t threshold = 5000);
