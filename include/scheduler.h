@@ -14,14 +14,16 @@ enum class Policy {
     SOLE_CPU,
     SOLE_GPU,
     ROUND_ROBIN,
-    DATA_SIZE_BASED
+    DATA_SIZE_BASED,
+    TASK_STEALING
 };
 
 inline std::map<Policy, std::string> policyNames = {
     {Policy::SOLE_CPU, "Sole CPU"},
     {Policy::SOLE_GPU, "Sole GPU"},
     {Policy::ROUND_ROBIN, "Round Robin"},
-    {Policy::DATA_SIZE_BASED, "Data Size Based"}
+    {Policy::DATA_SIZE_BASED, "Data Size Based"},
+    {Policy::TASK_STEALING, "Task Stealing"}
 };
 
 class scheduler {
@@ -32,6 +34,7 @@ public:
     void run();
 
 private:
+    bool stealTask(executionUnit thief, task &stolenTask);
     void runCPU();
     void runGPU();
 
