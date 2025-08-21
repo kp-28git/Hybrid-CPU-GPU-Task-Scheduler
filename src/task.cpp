@@ -4,6 +4,7 @@
 task::task(operation op, size_t dataSize)
     : op(op), arg(dataSize) {
         nameTask = operationNames[op] + "-" + std::to_string(dataSize);
+        computationSize = getComputationSize();
     }
 
 task::task(operation op, std::string fileName)
@@ -12,12 +13,12 @@ task::task(operation op, std::string fileName)
     }
 
 size_t task::getComputationSize() {
-;
-    if (op == operation::MATRIX_MULTIPLY || op == operation::GAUSSIAN_BLUR) {
-        computationSize *= computationSize;
+    size_t dataSize = std::get<size_t>(arg);
+    if (op == operation::MATRIX_MULTIPLY) {
+        computationSize = dataSize * dataSize;
     }
     else if (op == operation::SORTING || op == operation::VECTOR_ADD) {
-        computationSize = computationSize;
+        computationSize = dataSize;
     }
     return computationSize;
 }

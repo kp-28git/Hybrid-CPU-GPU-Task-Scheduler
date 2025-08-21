@@ -33,21 +33,21 @@ class metrics;
 
 class task : public metrics {
 public:
+    task() = default; 
     task(operation op, size_t dataSize);
     task(operation op, std::string fileName);
 
     operation op;
     taskArg arg;
     std::string nameTask;
-    unsigned int computationSize = 0;
+    unsigned int computationSize;
     executionUnit executionunit;
-
-    size_t getComputationSize();
     
     void runTask();
     void assignWork(std::function<void(taskArg)> fn);
 
 private:
+    size_t getComputationSize();
     std::function<void(taskArg)> work;
 };
 
