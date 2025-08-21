@@ -4,6 +4,10 @@
 #include <iostream>
 #include <stdexcept>
 #include <random>
+#include <filesystem>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
 gpu_tasks::gpu_tasks() {
     initOpenCL();
@@ -225,6 +229,50 @@ void gpu_tasks::sortingGPU(size_t N) {
     
     // std::cout << "[GPU] Result for sorting : ";
     // printVector(vec);
+}
+
+
+void gpu_tasks::gaussianBlurGPU(std::string &fileName) {
+
+    std::string inputPath  = "input_img/" + fileName;
+    std::string outputFolder = "output_img";
+    std::filesystem::create_directories(outputFolder);
+    std::string outputPath = outputFolder + "/out_" + fileName;
+    cv::Mat img = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
+    if (img.empty()) throw std::runtime_error("Failed to load image");
+
+    int width  = img.cols;
+    int height = img.rows;
+
+    std::vector<unsigned char> input(img.data, img.data + img.total());
+    std::vector<unsigned char> output(img.total(), 0);
+
+    cl_int err;
+    cl_mem bufInput  = clCreateBuffer(context, CL_MEM_READ_ONLY  | CL_MEM_COPY_HOST_PTR, sizeof(unsigned char) * input.size(), input.data(), &err);
+    cl_mem bufOutput = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(unsigned char) * output.size(), nullptr, &err);
+
+    cl_program prog = nullptr;
+    cl_kernel kern = buildKernelFromFile(context, device, "kernels/gaussianblur.cl", "gaussianblur", &prog);
+
+    err  = clSetKernelArg(kern, 0, sizeof(cl_mem), &bufInput);
+    err |= clSetKernelArg(kern, 1, sizeof(cl_mem), &bufOutput);
+    err |= clSetKernelArg(kern, 2, sizeof(int), &width);
+    err |= clSetKernelArg(kern, 3, sizeof(int), &height);
+    if (err != CL_SUCCESS) throw std::runtime_error("clSetKernelArg failed");
+
+    size_t global[2] = { static_cast<size_t>(width), static_cast<size_t>(height) };
+    err = clEnqueueNDRangeKernel(queue, kern, 2, nullptr, global, nullptr, 0, nullptr, nullptr);
+    clFinish(queue);
+
+    err = clEnqueueReadBuffer(queue, bufOutput, CL_TRUE, 0, sizeof(unsigned char) * output.size(), output.data(), 0, nullptr, nullptr);
+
+    clReleaseMemObject(bufInput);
+    clReleaseMemObject(bufOutput);
+    clReleaseKernel(kern);
+    clReleaseProgram(prog);
+
+    cv::Mat result(height, width, CV_8UC1, output.data());
+    cv::imwrite(outputPath, result);
 }
 
 

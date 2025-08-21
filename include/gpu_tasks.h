@@ -20,6 +20,9 @@ public:
     // Perform GPU sorting (odd-even sort)
     void sortingGPU(size_t N);
 
+    // Perform Gaussian blur on an image
+    void gaussianBlurGPU(std::string &filename);
+
 private:
     size_t N;
 
