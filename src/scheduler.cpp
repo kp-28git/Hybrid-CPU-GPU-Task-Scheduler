@@ -7,14 +7,16 @@ scheduler::scheduler(Policy policy, size_t threshold)
     std::cout << "Scheduler created with policy: " << policyNames[policy] << "\n";
 
     cpuOperations = {
-        {operation::MATRIX_MULTIPLY, [&](size_t N) { cpu.matrixMultiplyCPU(N); }},
-        {operation::VECTOR_ADD, [&](size_t N) { cpu.vectorAddCPU(N); }},
-        {operation::SORTING, [&](size_t N) { cpu.sortingCPU(N); }}
+        {operation::MATRIX_MULTIPLY, [&](taskArg arg) { cpu.matrixMultiplyCPU(std::get<size_t>(arg)); }},
+        {operation::VECTOR_ADD, [&](taskArg arg) { cpu.vectorAddCPU(std::get<size_t>(arg)); }},
+        {operation::SORTING, [&](taskArg arg) { cpu.sortingCPU(std::get<size_t>(arg)); }},
+        {operation::GAUSSIAN_BLUR, [&](taskArg arg) { cpu.gaussianBlurCPU(std::get<std::string>(arg)); }}
     };
     gpuOperations = {
-        {operation::MATRIX_MULTIPLY, [&](size_t N) { gpu.matrixMultiplyGPU(N); }},
-        {operation::VECTOR_ADD, [&](size_t N) { gpu.vectorAddGPU(N); }},
-        {operation::SORTING, [&](size_t N) { gpu.sortingGPU(N); }}
+        {operation::MATRIX_MULTIPLY, [&](taskArg arg) { gpu.matrixMultiplyGPU(std::get<size_t>(arg)); }},
+        {operation::VECTOR_ADD, [&](taskArg arg) { gpu.vectorAddGPU(std::get<size_t>(arg)); }},
+        {operation::SORTING, [&](taskArg arg) { gpu.sortingGPU(std::get<size_t>(arg)); }},
+        {operation::GAUSSIAN_BLUR, [&](taskArg arg) { gpu.gaussianBlurGPU(std::get<std::string>(arg)); }}
     };
 
 }

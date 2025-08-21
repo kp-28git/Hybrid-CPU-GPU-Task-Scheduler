@@ -38,8 +38,8 @@ private:
     cpu_tasks cpu;
     gpu_tasks gpu;
 
-    std::map<operation, std::function<void(size_t N)>> cpuOperations;
-    std::map<operation, std::function<void(size_t N)>> gpuOperations;
+    std::map<operation, std::function<void(taskArg)>> cpuOperations;
+    std::map<operation, std::function<void(taskArg)>> gpuOperations;
 
     std::queue<task> cpuTasks;
     std::queue<task> gpuTasks;

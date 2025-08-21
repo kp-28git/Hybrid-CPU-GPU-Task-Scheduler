@@ -2,29 +2,34 @@
 #include <iostream>
 
 task::task(operation op, size_t dataSize)
-    : op(op), dataSize(dataSize) {
-        name = operationNames[op] + "-" + std::to_string(dataSize);
+    : op(op), arg(dataSize) {
+        nameTask = operationNames[op] + "-" + std::to_string(dataSize);
     }
 
-size_t task::getComputationSize() const {
-    size_t computationSize = dataSize;
-    if (op == operation::MATRIX_MULTIPLY || op == operation::VECTOR_ADD) {
-        computationSize *= dataSize;
+task::task(operation op, std::string fileName)
+    : op(op),arg(fileName) {
+        nameTask = operationNames[op] + "-" + fileName;
     }
-    else if (op == operation::SORTING) {
-        computationSize = dataSize;
+
+size_t task::getComputationSize() {
+;
+    if (op == operation::MATRIX_MULTIPLY || op == operation::GAUSSIAN_BLUR) {
+        computationSize *= computationSize;
+    }
+    else if (op == operation::SORTING || op == operation::VECTOR_ADD) {
+        computationSize = computationSize;
     }
     return computationSize;
 }
 
 void task::runTask() {
     std::string ex = (executionunit == executionUnit::CPU) ? " [CPU]" : " [GPU]";
-    std::cout << "Running task: "<< name <<ex <<"\n";
+    std::cout << "Running task: "<< nameTask <<ex <<"\n";
     metrics::start();
-    if (work) work(dataSize);
+    if (work) work(arg);
     metrics::stop();
 }
 
-void task::assignWork(std::function<void(size_t N)> workFunc) {
-    work = workFunc;
+void task::assignWork(std::function<void(taskArg)> fn){
+        work = fn;
 }

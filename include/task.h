@@ -4,12 +4,14 @@
 #include <functional>
 #include <string>
 #include <map>
+#include <variant>
 #include "metrics.h"
 
 enum class operation {
     MATRIX_MULTIPLY,
     VECTOR_ADD,
-    SORTING
+    SORTING,
+    GAUSSIAN_BLUR
 };
 
 enum class executionUnit
@@ -21,29 +23,32 @@ enum class executionUnit
 inline std::map<operation, std::string> operationNames = {
     {operation::MATRIX_MULTIPLY, "Matrix Multiplication"},
     {operation::VECTOR_ADD, "Vector Addition"},
-    {operation::SORTING, "Sorting"}
+    {operation::SORTING, "Sorting"},
+    {operation::GAUSSIAN_BLUR, "Gaussian Blur"}
 };
+
+using taskArg = std::variant<int, size_t, std::string, std::vector<int>>;
 
 class metrics;
 
 class task : public metrics {
 public:
     task(operation op, size_t dataSize);
-
-    std::string& getName();
-    
-    size_t getComputationSize() const;
+    task(operation op, std::string fileName);
 
     operation op;
-    size_t dataSize;
-    std::string name;
+    taskArg arg;
+    std::string nameTask;
+    unsigned int computationSize = 0;
     executionUnit executionunit;
+
+    size_t getComputationSize();
     
     void runTask();
-    void assignWork(std::function<void(size_t N)> workFunc);
+    void assignWork(std::function<void(taskArg)> fn);
 
 private:
-    std::function<void(size_t N)> work;
+    std::function<void(taskArg)> work;
 };
 
 #endif // TASK_H
