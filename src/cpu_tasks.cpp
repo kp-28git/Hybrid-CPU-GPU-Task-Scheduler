@@ -1,60 +1,74 @@
 #include "cpu_tasks.h"
 #include "metrics.h"
-#include <fstream>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include <iostream>
 #include <stdexcept>
 #include <random>
+#include <filesystem>
 
-cpu_tasks::Image cpu_tasks::readPPM(const std::string &filename) {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) throw std::runtime_error("Cannot open file " + filename);
 
-    std::string format;
-    int width, height, maxval;
-    file >> format >> width >> height >> maxval;
-    file.get(); // skip single whitespace
+#define OPENCV_COMPUTATION   1
 
-    Image img{width, height, std::vector<unsigned char>(width * height * 3)};
-    file.read(reinterpret_cast<char*>(img.data.data()), img.data.size());
-    return img;
-}
+void cpu_tasks::gaussianBlurCPU(std::string &fileName) {
 
-void cpu_tasks::writePPM(const std::string &filename, const Image &img) {
-    std::ofstream file(filename, std::ios::binary);
-    file << "P6\n" << img.width << " " << img.height << "\n255\n";
-    file.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
-}
+    std::string inputPath  = "input_img/" + fileName;
+    std::string outputFolder = "output_img";
+    std::filesystem::create_directories(outputFolder);
+    std::string outputPath = outputFolder + "/out_" + fileName;
 
-void cpu_tasks::gaussianBlurCPU(const std::string &imagePath, const std::string &outputPath) {
-    Image img = readPPM(imagePath);
-    Image output = img;
-    int w = img.width;
-    int h = img.height;
+    cv::Mat input = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
+    if (input.empty()) {
+        std::cerr << "Error: Could not open input image: " << inputPath << std::endl;
+        return;
+    }
 
-    int kernel[3][3] = {
-        {1, 2, 1},
-        {2, 4, 2},
-        {1, 2, 1}
+    cv::Mat output = input.clone(); // same size as input
+
+    // 5x5 Gaussian kernel
+    float kernel[5][5] = {
+        {1/256.f,  4/256.f,  6/256.f,  4/256.f, 1/256.f},
+        {4/256.f, 16/256.f, 24/256.f, 16/256.f, 4/256.f},
+        {6/256.f, 24/256.f, 36/256.f, 24/256.f, 6/256.f},
+        {4/256.f, 16/256.f, 24/256.f, 16/256.f, 4/256.f},
+        {1/256.f,  4/256.f,  6/256.f,  4/256.f, 1/256.f}
     };
-    int kernelSum = 16;
 
-    for (int y = 1; y < h - 1; ++y) {
-        for (int x = 1; x < w - 1; ++x) {
-            for (int c = 0; c < 3; ++c) {
-                int sum = 0;
-                for (int ky = -1; ky <= 1; ++ky) {
-                    for (int kx = -1; kx <= 1; ++kx) {
-                        int idx = ((y + ky) * w + (x + kx)) * 3 + c;
-                        sum += img.data[idx] * kernel[ky + 1][kx + 1];
+    int rows = input.rows;
+    int cols = input.cols;
+
+    if (OPENCV_COMPUTATION) {
+    cv::Mat kernelData(5, 5, CV_32F, kernel);
+    cv::filter2D(input, output, -1, kernelData);
+    } 
+    else {
+        // Apply kernel using loops
+        for (int i = 2; i < rows - 2; ++i) {
+            for (int j = 2; j < cols - 2; ++j) {
+                float sum = 0.0f;
+
+                // Loop over the kernel
+                for (int ki = -2; ki <= 2; ++ki) {
+                    for (int kj = -2; kj <= 2; ++kj) {
+                        sum += kernel[ki + 2][kj + 2] * input.at<uchar>(i + ki, j + kj);
                     }
                 }
-                output.data[(y * w + x) * 3 + c] = sum / kernelSum;
+
+                output.at<uchar>(i, j) = static_cast<uchar>(sum);
             }
         }
     }
 
-    writePPM(outputPath, output);
+
+
+    
+    if (!cv::imwrite(outputPath, output)) {
+        std::cerr << "Error: Could not save output image: " << outputPath << std::endl;
+    }
 }
+
 
 void cpu_tasks::printVector(const std::vector<int> &vec) {
     for (const auto &val : vec) {

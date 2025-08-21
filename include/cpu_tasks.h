@@ -13,7 +13,7 @@ public:
     };
 
     // Image processing
-    static void gaussianBlurCPU(const std::string &imagePath, const std::string &outputPath);
+    void gaussianBlurCPU(std::string &fileName);
 
     // Matrix operations
     void matrixMultiplyCPU(size_t N);
